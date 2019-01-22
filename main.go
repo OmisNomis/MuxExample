@@ -54,6 +54,10 @@ func start() {
 	private.Use(auth.Verify)
 	private.HandleFunc("/supersecret/", routes.SecretHandler).Methods("GET")
 
+	r.HandleFunc("/ws", routes.WSHandler)
+
+	r.PathPrefix("/dist/").Handler(http.StripPrefix("/dist/", http.FileServer(http.Dir("./wstest"))))
+
 	// Serve static assets directly.
 	r.PathPrefix("/static/").Handler(http.FileServer(http.Dir("./build")))
 	// Serve index page on all unhandled routes

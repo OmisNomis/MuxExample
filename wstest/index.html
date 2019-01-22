@@ -1,0 +1,37 @@
+<html>
+   <head>
+   </head>
+   <body>
+     <h1>WebSocket Example!!</h1>
+     <input id="name" type="text" placeholder="display name"/>
+     <br />
+     <br />
+     <input id="input" type="text" placeholder="message" />
+     <button onclick="send()">Send</button>
+     <pre id="output"></pre>
+     <script>
+       var input = document.getElementById("input");
+       var output = document.getElementById("output");
+       var socket = new WebSocket("ws://localhost:8000/ws");
+
+       socket.onerror = err => {
+         console.log(err)
+       }
+     
+       socket.onopen = function () {
+         output.innerHTML += "Status: Connected\n";
+       };
+     
+       socket.onmessage = function (e) {
+         output.innerHTML += e.data + "\n";
+       };
+     
+       function send() {
+         let name = document.getElementById("name").value
+         socket.send(name + " : " + input.value);
+         input.value = "";
+       }
+     </script>
+   </body>
+</html>
+
