@@ -18,7 +18,7 @@ func main() {
 
 	// It's important that this is before your catch-all route ("/")
 	api := r.PathPrefix("/api/v1/").Subrouter()
-	api.HandleFunc("/users", GetUsersHandler).Methods("GET")
+	api.HandleFunc("/users", getUsersHandler).Methods("GET")
 
 	/*
 		FileServer() is told the root of static files is "static".
@@ -31,7 +31,7 @@ func main() {
 		and the remaining will be the relative path compared to the root folder
 		"static" which if we join gives:
 
-		/static/example.txt
+		./static/example.txt
 
 	*/
 	r.PathPrefix("/dist/").Handler(http.StripPrefix("/dist/", http.FileServer(http.Dir("./static"))))
@@ -44,8 +44,12 @@ func main() {
 		fmt.Fprintf(w, "You've requested the book: %s on page %s\n", title, page)
 	})
 
-	// Catch-all: Serve our JavaScript application's entry-point (index.html).
-	r.PathPrefix("/").HandlerFunc(IndexHandler("index.html"))
+	// Serve static files for React App
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./build/static/"))))
+	// Serve index page on all unhandled routes
+	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./build/index.html")
+	})
 
 	srv := &http.Server{
 		Handler: handlers.LoggingHandler(os.Stdout, r),
@@ -58,15 +62,7 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-func IndexHandler(entrypoint string) func(w http.ResponseWriter, r *http.Request) {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, entrypoint)
-	}
-
-	return http.HandlerFunc(fn)
-}
-
-func GetUsersHandler(w http.ResponseWriter, r *http.Request) {
+func getUsersHandler(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{
 		"id": "12345",
 		"ts": time.Now().Format(time.RFC3339),
