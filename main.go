@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"log"
 
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -19,6 +17,9 @@ func main() {
 	// It's important that this is before your catch-all route ("/")
 	api := r.PathPrefix("/api/v1/").Subrouter()
 	api.HandleFunc("/users", getUsersHandler).Methods("GET")
+
+	/* Middleware */
+	r.Use(loggingMiddleware)
 
 	/*
 		FileServer() is told the root of static files is "static".
@@ -36,7 +37,7 @@ func main() {
 	*/
 	r.PathPrefix("/dist/").Handler(http.StripPrefix("/dist/", http.FileServer(http.Dir("./static"))))
 
-	r.HandleFunc("/books/{title}/page/{page}", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/books/{title}/page/{page:[0-9]+}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		title := vars["title"]
 		page := vars["page"]
@@ -44,15 +45,18 @@ func main() {
 		fmt.Fprintf(w, "You've requested the book: %s on page %s\n", title, page)
 	})
 
+	// Serve static assets directly.
+	r.PathPrefix("/static/").Handler(http.FileServer(http.Dir("./build")))
+
 	// Serve static files for React App
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./build/static/"))))
+	// r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./build/static/"))))
 	// Serve index page on all unhandled routes
 	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./build/index.html")
 	})
 
 	srv := &http.Server{
-		Handler: handlers.LoggingHandler(os.Stdout, r),
+		Handler: r,
 		Addr:    "127.0.0.1:8000",
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 15 * time.Second,
@@ -75,4 +79,12 @@ func getUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(b)
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+
+		log.Println(r.RequestURI)
+	})
 }
