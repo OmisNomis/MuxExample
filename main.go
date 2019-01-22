@@ -8,6 +8,7 @@ import (
 
 	"log"
 
+	"./auth"
 	"./routes"
 
 	"github.com/gorilla/handlers"
@@ -47,9 +48,14 @@ func start() {
 	api.HandleFunc("/books/{title}/page/{page:[0-9]+}", routes.GetBooks).Methods("GET")
 	api.HandleFunc("/bitcoin/difficulty/", routes.GetDifficulty).Methods("GET")
 
+	r.HandleFunc("/authenticate", auth.Authenticate).Methods("POST")
+
+	private := r.PathPrefix("/private/").Subrouter()
+	private.Use(auth.Verify)
+	private.HandleFunc("/supersecret/", routes.SecretHandler).Methods("GET")
+
 	// Serve static assets directly.
 	r.PathPrefix("/static/").Handler(http.FileServer(http.Dir("./build")))
-
 	// Serve index page on all unhandled routes
 	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./build/index.html")
