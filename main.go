@@ -40,11 +40,12 @@ func appCleanup() {
 }
 
 func start() {
-	r := mux.NewRouter()
+	r := mux.NewRouter().StrictSlash(true)
 
 	api := r.PathPrefix("/api/v1/").Subrouter()
-	api.HandleFunc("/users", routes.GetUsersHandler).Methods("GET")
+	api.HandleFunc("/users/", routes.GetUsersHandler).Methods("GET")
 	api.HandleFunc("/books/{title}/page/{page:[0-9]+}", routes.GetBooks).Methods("GET")
+	api.HandleFunc("/bitcoin/difficulty/", routes.GetDifficulty).Methods("GET")
 
 	// Serve static assets directly.
 	r.PathPrefix("/static/").Handler(http.FileServer(http.Dir("./build")))
