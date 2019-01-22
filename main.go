@@ -55,8 +55,13 @@ func start() {
 		http.ServeFile(w, r, "./build/index.html")
 	})
 
+	originsOk := handlers.AllowedOrigins([]string{"*"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "DELETE", "POST", "PUT", "OPTIONS"})
+
+	corsHandler := handlers.CORS(originsOk, methodsOk)(r)
+
 	srv := &http.Server{
-		Handler: handlers.LoggingHandler(os.Stdout, r),
+		Handler: handlers.LoggingHandler(os.Stdout, corsHandler),
 		Addr:    "127.0.0.1:8000",
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 15 * time.Second,
