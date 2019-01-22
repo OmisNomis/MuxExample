@@ -43,6 +43,9 @@ func appCleanup() {
 func start() {
 	r := mux.NewRouter().StrictSlash(true)
 
+	hub := routes.NewHub()
+	go hub.Run()
+
 	api := r.PathPrefix("/api/v1/").Subrouter()
 	api.HandleFunc("/users/", routes.GetUsersHandler).Methods("GET")
 	api.HandleFunc("/books/{title}/page/{page:[0-9]+}", routes.GetBooks).Methods("GET")
@@ -54,7 +57,9 @@ func start() {
 	private.Use(auth.Verify)
 	private.HandleFunc("/supersecret/", routes.SecretHandler).Methods("GET")
 
-	r.HandleFunc("/ws", routes.WSHandler)
+	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		routes.WSHandler(hub, w, r)
+	})
 
 	r.PathPrefix("/dist/").Handler(http.StripPrefix("/dist/", http.FileServer(http.Dir("./wstest"))))
 
