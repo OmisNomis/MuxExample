@@ -44,7 +44,6 @@ func start() {
 	r := mux.NewRouter().StrictSlash(true)
 
 	hub := routes.NewHub()
-	go hub.Run()
 
 	api := r.PathPrefix("/api/v1/").Subrouter()
 	api.HandleFunc("/users/", routes.GetUsersHandler).Methods("GET")
