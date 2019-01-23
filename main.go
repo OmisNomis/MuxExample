@@ -41,6 +41,12 @@ func appCleanup() {
 }
 
 func start() {
+	if os.Getenv("ENVIRIONMENT") == "PRODUCTION" {
+		go http.ListenAndServe(":80", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "https://"+r.Host+r.URL.String(), http.StatusMovedPermanently)
+		}))
+	}
+
 	r := mux.NewRouter().StrictSlash(true)
 
 	hub := routes.NewHub()
